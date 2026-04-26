@@ -2,9 +2,9 @@ const CACHE_NAME = 'caseforge-v1';
 const ASSETS_TO_CACHE = [
   '/CF22/',
   '/CF22/index.html',
-  // Add any CSS, JS, or image files you have here
-  '/CF22/icon-192.png',
-  '/CF22/icon-512.png'
+  '/CF22/style.css',
+  '/CF22/script.js',
+  '/CF22/manifest.json'
 ];
 
 // Install event: Caches the assets
