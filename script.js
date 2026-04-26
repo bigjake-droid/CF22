@@ -1,5 +1,10 @@
 let docs = JSON.parse(localStorage.getItem("caseforge_docs")) || [];
 
+if (window.pdfjsLib) {
+  pdfjsLib.GlobalWorkerOptions.workerSrc =
+    "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+}
+
 /* ===== APP START STATE ===== */
 window.onload = () => {
   document.getElementById("startScreen")?.classList.remove("hidden");
@@ -45,13 +50,13 @@ function enterCaseApp() {
   renderAll();
 }
 
-/* ===== CORE APP ===== */
+/* ===== STORAGE ===== */
 function saveDocs() {
   localStorage.setItem("caseforge_docs", JSON.stringify(docs));
 }
 
 function escapeHTML(str = "") {
-  return str.replace(/[&<>"']/g, match => ({
+  return String(str).replace(/[&<>"']/g, match => ({
     "&": "&amp;",
     "<": "&lt;",
     ">": "&gt;",
@@ -60,42 +65,119 @@ function escapeHTML(str = "") {
   }[match]));
 }
 
-function addDoc() {
+/* ===== FILE INTELLIGENCE ===== */
+function readFileAsDataURL(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => resolve(e.target.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function readFileAsArrayBuffer(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => resolve(e.target.result);
+    reader.onerror = reject;
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+function readFileAsText(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => resolve(e.target.result);
+    reader.onerror = reject;
+    reader.readAsText(file);
+  });
+}
+
+async function extractTextFromPDF(file) {
+  if (!window.pdfjsLib) {
+    return "";
+  }
+
+  const arrayBuffer = await readFileAsArrayBuffer(file);
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+
+  let fullText = "";
+
+  for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+    const page = await pdf.getPage(pageNum);
+    const content = await page.getTextContent();
+    const strings = content.items.map(item => item.str).join(" ");
+    fullText += `\n\n--- Page ${pageNum} ---\n${strings}`;
+  }
+
+  return fullText.trim();
+}
+
+async function extractTextFromFile(file) {
+  const name = file.name.toLowerCase();
+
+  try {
+    if (name.endsWith(".pdf")) {
+      return await extractTextFromPDF(file);
+    }
+
+    if (
+      name.endsWith(".txt") ||
+      name.endsWith(".csv") ||
+      name.endsWith(".log") ||
+      name.endsWith(".md")
+    ) {
+      return await readFileAsText(file);
+    }
+
+    return "";
+  } catch (err) {
+    console.error("File extraction failed:", err);
+    return "";
+  }
+}
+
+/* ===== ADD EVIDENCE ===== */
+async function addDoc() {
   const title = document.getElementById("title").value.trim();
   const date = document.getElementById("date").value.trim();
-  const text = document.getElementById("text").value.trim();
+  const manualText = document.getElementById("text").value.trim();
   const fileInput = document.getElementById("fileUpload");
 
-  if (!title || !date || !text) {
-    alert("Fill out title, date, and excerpt.");
+  const file = fileInput?.files?.[0];
+
+  if (!title || !date || (!manualText && !file)) {
+    alert("Add a title, date, and either text or a file.");
     return;
   }
+
+  let fileName = "";
+  let fileData = "";
+  let extractedText = "";
+
+  if (file) {
+    fileName = file.name;
+    fileData = await readFileAsDataURL(file);
+    extractedText = await extractTextFromFile(file);
+  }
+
+  const finalText = [
+    manualText,
+    extractedText ? `Extracted File Text:\n${extractedText}` : ""
+  ].filter(Boolean).join("\n\n");
 
   const entry = {
     id: Date.now() + Math.random(),
     title,
     date,
-    text,
-    fileName: "",
-    fileData: ""
+    text: finalText || "File uploaded. No readable text could be extracted.",
+    fileName,
+    fileData,
+    extractedText
   };
 
-  if (fileInput.files.length > 0) {
-    const file = fileInput.files[0];
-    const reader = new FileReader();
-
-    reader.onload = e => {
-      entry.fileName = file.name;
-      entry.fileData = e.target.result;
-      docs.push(entry);
-      finishAdd();
-    };
-
-    reader.readAsDataURL(file);
-  } else {
-    docs.push(entry);
-    finishAdd();
-  }
+  docs.push(entry);
+  finishAdd();
 }
 
 function finishAdd() {
@@ -121,11 +203,15 @@ function clearCase() {
   renderAll();
 }
 
+/* ===== ANALYSIS ===== */
 function normalizeText(text) {
-  return text.toLowerCase().replace(/[^\w\s]/g, "").replace(/\s+/g, " ").trim();
+  return String(text)
+    .toLowerCase()
+    .replace(/[^\w\s]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
-/* ===== CLEAN CONFLICT DETECTION — NO DUPLICATES ===== */
 function getConflicts() {
   const conflicts = [];
   const seen = new Set();
@@ -135,12 +221,20 @@ function getConflicts() {
       const a = docs[i];
       const b = docs[j];
 
-      const sameText = normalizeText(a.text) === normalizeText(b.text);
-      const sameTitle = normalizeText(a.title) === normalizeText(b.title);
+      const aText = normalizeText(a.text);
+      const bText = normalizeText(b.text);
+      const aTitle = normalizeText(a.title);
+      const bTitle = normalizeText(b.title);
+
+      if (aText === bText && a.date === b.date) continue;
+
+      const sameText = aText === bText;
+      const sameTitle = aTitle === bTitle;
       const differentDate = a.date !== b.date;
 
       if ((sameText || sameTitle) && differentDate) {
-        const key = [a.id || i, b.id || j].sort().join("-");
+        const keyBase = sameText ? aText : aTitle;
+        const key = `${keyBase}|${[a.date, b.date].sort().join("-")}`;
 
         if (!seen.has(key)) {
           seen.add(key);
@@ -177,9 +271,10 @@ function renderDocs() {
       <b>${escapeHTML(d.title)}</b><br>
       <small>${escapeHTML(d.date)}</small><br><br>
 
-      ${escapeHTML(d.text)}
+      ${escapeHTML(d.text).slice(0, 1200)}
+      ${d.text.length > 1200 ? "<br><br><i>Text shortened in dashboard. Full text included in PDF export.</i>" : ""}
 
-      ${d.fileData ? `<br><br><a href="${d.fileData}" target="_blank">📎 Open File</a>` : ""}
+      ${d.fileData ? `<br><br><a href="${d.fileData}" target="_blank" download="${escapeHTML(d.fileName)}">📎 Open ${escapeHTML(d.fileName)}</a>` : ""}
 
       <br><br>
       <button onclick="removeDoc(${i})">Remove</button>
@@ -288,7 +383,7 @@ function renderTimeline() {
   `).join("");
 }
 
-/* ===== LOGO LOADER FOR PDF ===== */
+/* ===== PDF EXPORT ===== */
 function loadLogo() {
   return new Promise(resolve => {
     const img = new Image();
@@ -300,10 +395,9 @@ function loadLogo() {
   });
 }
 
-/* ===== REAL PDF EXPORT WITH LOGO ===== */
 async function exportReport() {
   if (!window.jspdf) {
-    alert("PDF library did not load. Check your index.html script links.");
+    alert("PDF library did not load. Check index.html.");
     return;
   }
 
@@ -357,18 +451,9 @@ async function exportReport() {
     }
   }
 
-  pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(22);
-  pdf.setTextColor(0);
-  pdf.text("CaseForge Report", left, y);
-  y += 10;
-
-  pdf.setFont("helvetica", "normal");
-  pdf.setFontSize(10);
-  pdf.text(`Case Type: ${caseType}`, left, y);
-  y += 6;
-  pdf.text(`Generated: ${new Date().toLocaleString()}`, left, y);
-  y += 8;
+  addText("CaseForge Report", 22, true);
+  addText(`Case Type: ${caseType}`, 10);
+  addText(`Generated: ${new Date().toLocaleString()}`, 10);
 
   divider();
 
@@ -452,4 +537,4 @@ async function exportReport() {
   );
 
   pdf.save("caseforge_report.pdf");
-}
+        }
