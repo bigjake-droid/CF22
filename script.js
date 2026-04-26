@@ -79,8 +79,43 @@ function renderAll() {
   renderDocs();
   renderConflicts();
   renderAnalysis();
+  function renderLeverage() {
+  const conflicts = getConflicts();
+  let out = "";
+
+  if (conflicts.length === 0) {
+    out = `
+      <div class="white-output">
+        No leverage point generated yet. Add matching records with conflicting dates, claims, or source language.
+      </div>
+    `;
+  } else {
+    const c = conflicts[0];
+
+    out = `
+      <div class="white-output">
+        <b>Primary Leverage Point:</b><br><br>
+
+        Two records appear to reference the same underlying event, but they report different dates:
+        <b>${c.a.date}</b> and <b>${c.b.date}</b>.<br><br>
+
+        <b>Useable Argument:</b><br>
+        This discrepancy raises questions about the reliability of the reported sequence of events,
+        the accuracy of the documentation, and whether later records were created or shaped after the fact.<br><br>
+
+        <b>Suggested Language:</b><br>
+        “The record contains inconsistent dates for what appears to be the same alleged event. That inconsistency
+        undermines confidence in the timeline and warrants clarification before any conclusion is treated as reliable.”
+      </div>
+    `;
+  }
+
+  document.getElementById("leverageBox").innerHTML = out;
+  }
+  renderLeverage();
   renderPressure();
   renderTimeline();
+}
 }
 
 // Render documents
