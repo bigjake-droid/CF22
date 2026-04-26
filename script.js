@@ -1,7 +1,14 @@
 let docs = JSON.parse(localStorage.getItem("caseforge_docs")) || [];
 
 window.onload = () => renderAll();
+function startCase(type) {
+  localStorage.setItem("caseforge_case_type", type);
 
+  document.getElementById("startScreen").classList.add("hidden");
+  document.getElementById("caseApp").classList.remove("hidden");
+
+  renderAll();
+}
 function saveDocs() {
   localStorage.setItem("caseforge_docs", JSON.stringify(docs));
 }
