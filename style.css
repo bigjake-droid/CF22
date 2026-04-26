@@ -25,12 +25,15 @@ body {
 }
 
 .tagline {
-  color: #d4a44b;
-  font-size: 14px;
-  font-weight: 700;
-  letter-spacing: 4px;
-  text-transform: uppercase;
-  line-height: 1.6;
+    text-shadow: 0 0 10px rgba(212,162,76,0.6);
+}
+    font-size: 26px;
+    font-weight: 900;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: #f5c16c;
+    text-align: center;
+    margin: 20px 0 30px;
 }
 
 /* INPUTS */
