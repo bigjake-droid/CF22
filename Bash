@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CaseForge</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<div class="header">
+  <img src="https://i.postimg.cc/yNd0Q3V0/file-00000000d22c71fda95c9a29f9b4431a.png" class="logo-img">
+  <div class="tagline">YOUR FIGHT FOR FREEDOM BEGINS NOW</div>
+</div>
+
+<input id="title" placeholder="Document title">
+<input id="date" placeholder="Date (ex: Aug 6, 2025)">
+<textarea id="text" placeholder="Paste excerpt..."></textarea>
+<button onclick="addDoc()">Add Evidence</button>
+
+<h2>Conflicts</h2>
+<div id="conflicts"></div>
+
+<h2>Investigator View</h2>
+<div id="analysis"></div>
+
+<h2>Legal Pressure Score</h2>
+<div id="pressureBox"></div>
+
+<h2>Documents CaseForge Recommends</h2>
+<div id="requestBox"></div>
+
+<h2>Timeline</h2>
+<div id="timeline"></div>
+
+<button onclick="exportReport()">Export Report</button>
+
+<script src="script.js"></script>
+</body>
+</html>
