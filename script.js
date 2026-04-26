@@ -1,29 +1,21 @@
 let docs = [];
-const STORAGE_KEY = "caseforge_docs";
 
-/* LOAD SAVED CASE */
-function loadDocs() {
-  const saved = localStorage.getItem(STORAGE_KEY);
-  docs = saved ? JSON.parse(saved) : [];
-}
+// Load saved case on startup
+window.onload = function () {
+  const saved = localStorage.getItem("caseforge_docs");
+  if (saved) {
+    docs = JSON.parse(saved);
+    renderAll();
+  }
+};
 
-/* SAVE CASE */
+// Save to browser
 function saveDocs() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(docs));
+  localStorage.setItem("caseforge_docs", JSON.stringify(docs));
 }
 
-/* ADD DOCUMENT */
-function addDoc() {function addDoc() {function finishAddDoc() {
-  document.getElementById("title").value = "";
-  document.getElementById("date").value = "";
-  document.getElementById("text").value = "";
-
-  const fileInput = document.getElementById("fileUpload");
-  if (fileInput) fileInput.value = "";
-
-  saveDocs();
-  renderAll();
-}
+// Add Evidence
+function addDoc() {
   const title = document.getElementById("title").value.trim();
   const date = document.getElementById("date").value.trim();
   const text = document.getElementById("text").value.trim();
@@ -34,21 +26,20 @@ function addDoc() {function addDoc() {function finishAddDoc() {
     return;
   }
 
-  if (fileInput && fileInput.files.length > 0) {
+  if (fileInput.files.length > 0) {
     const file = fileInput.files[0];
     const reader = new FileReader();
 
-    reader.onload = function(e) {
+    reader.onload = function (e) {
       docs.push({
         title,
         date,
         text,
         fileName: file.name,
-        fileType: file.type,
         fileData: e.target.result
       });
 
-      finishAddDoc();
+      finishAdd();
     };
 
     reader.readAsDataURL(file);
@@ -58,75 +49,78 @@ function addDoc() {function addDoc() {function finishAddDoc() {
       date,
       text,
       fileName: "",
-      fileType: "",
       fileData: ""
     });
 
-    finishAddDoc();
+    finishAdd();
   }
 }
-  const title = document.getElementById("title").value.trim();
-  const date = document.getElementById("date").value.trim();
-  const text = document.getElementById("text").value.trim();
 
-  if (!title || !date || !text) {
-    alert("Fill out all fields.");
-    return;
-  }
-
-  docs.push({ title, date, text });
-
+// Finish add
+function finishAdd() {
   document.getElementById("title").value = "";
   document.getElementById("date").value = "";
   document.getElementById("text").value = "";
-const fileInput = document.getElementById("fileUpload");
-let fileName = "";
+  document.getElementById("fileUpload").value = "";
 
-if (fileInput.files.length > 0) {
-  fileName = fileInput.files[0].name;
-}
   saveDocs();
   renderAll();
 }
 
-/* REMOVE DOCUMENT */
-function removeDoc(index) {
-  docs.splice(index, 1);
+// Remove doc
+function removeDoc(i) {
+  docs.splice(i, 1);
   saveDocs();
   renderAll();
 }
 
-/* CLEAR CASE */
-function clearCase() {
-  if (!confirm("Clear all saved exhibits?")) return;
-  docs = [];
-  saveDocs();
-  renderAll();
+// Render everything
+function renderAll() {
+  renderDocs();
+  renderConflicts();
+  renderAnalysis();
+  renderPressure();
+  renderTimeline();
 }
 
-/* SHARED WORD DETECTION */
-function getSharedWords(a, b) {
-  const ignore = ["the","and","was","with","for","that","this","from","were","are","his","her","you","your","into","vehicle"];
+// Render documents
+function renderDocs() {
+  let out = "";
 
-  const w1 = a.toLowerCase().split(/\W+/).filter(w => w.length > 4 && !ignore.includes(w));
-  const w2 = b.toLowerCase().split(/\W+/).filter(w => w.length > 4 && !ignore.includes(w));
+  docs.forEach((d, i) => {
+    out += `
+      <div class="card">
+        <b>${d.title}</b><br>
+        <small>${d.date}</small><br><br>
 
-  return [...new Set(w1.filter(w => w2.includes(w)))];
+        ${d.text}
+
+        ${d.fileData 
+          ? `<br><a href="${d.fileData}" target="_blank" download="${d.fileName}">📎 Open ${d.fileName}</a>` 
+          : ""}
+
+        <br><br>
+        <button class="remove-btn" onclick="removeDoc(${i})">Remove</button>
+      </div>
+    `;
+  });
+
+  document.getElementById("analysis").innerHTML = out;
 }
 
-/* CONFLICT ENGINE */
+// Detect conflicts
 function getConflicts() {
   let conflicts = [];
 
   for (let i = 0; i < docs.length; i++) {
     for (let j = i + 1; j < docs.length; j++) {
-      const words = getSharedWords(docs[i].text, docs[j].text);
-
-      if (words.length >= 2 && docs[i].date !== docs[j].date) {
+      if (
+        docs[i].text === docs[j].text &&
+        docs[i].date !== docs[j].date
+      ) {
         conflicts.push({
           a: docs[i],
-          b: docs[j],
-          words
+          b: docs[j]
         });
       }
     }
@@ -135,58 +129,19 @@ function getConflicts() {
   return conflicts;
 }
 
-/* RENDER ALL */
-function renderAll() {
+// Render conflicts
+function renderConflicts() {
   const conflicts = getConflicts();
-
-  renderDocs();
-  renderConflicts(conflicts);
-  renderAnalysis(conflicts);
-  renderPressure(conflicts);
-  renderRequests(conflicts);
-  renderTimeline();
-}
-
-/* SHOW EXHIBITS */
-function renderDocs() {
-  let out = "";
-docs.forEach((d, i) => {
-  out += `
-    <div class="card">
-      <b>${d.title}</b><br>
-      <small>${d.date}</small><br><br>
-
-      ${d.text}
-
-      ${d.fileData 
-        ? `<br><a href="${d.fileData}" target="_blank" download="${d.fileName}">📎 Open ${d.fileName}</a>` 
-        : ""}
-
-      <br><br>
-      <button class="remove-btn" onclick="removeDoc(${i})">Remove</button>
-    </div>
-  `;
-});
-
-    `;
-  });
-
-  document.getElementById("analysis").innerHTML = out;
-}
-
-/* CONFLICTS */
-function renderConflicts(conflicts) {
   let out = "";
 
   if (conflicts.length === 0) {
-    out = "<div class='card'>No conflicts detected yet.</div>";
+    out = "<p>No conflicts detected yet.</p>";
   } else {
     conflicts.forEach(c => {
       out += `
-        <div class="card">
-          <b>${c.a.title}</b> vs <b>${c.b.title}</b><br>
-          Dates: ${c.a.date} vs ${c.b.date}<br><br>
-          Shared Terms: ${c.words.join(", ")}
+        <div class="white-output">
+          Conflict: "${c.a.title}" vs "${c.b.title}"<br>
+          Dates: <b>${c.a.date}</b> vs <b>${c.b.date}</b>
         </div>
       `;
     });
@@ -195,38 +150,31 @@ function renderConflicts(conflicts) {
   document.getElementById("conflicts").innerHTML = out;
 }
 
-/* INVESTIGATOR VIEW */
-function renderAnalysis(conflicts) {
-  let out = "";
+// Investigator view
+function renderAnalysis() {
+  const conflicts = getConflicts();
 
-  if (docs.length === 0) {
-    out = "<div class='white-output'>Add exhibits to begin analysis.</div>";
-  } else if (conflicts.length === 0) {
-    out = "<div class='white-output'>No major contradiction identified yet.</div>";
-  } else {
-    const c = conflicts[0];
+  let text = "No major contradictions identified yet.";
 
-    out = `
-      <div class="white-output">
-        <b>Investigator View:</b><br><br>
-        Records reference similar subject matter but list different dates:
-        <b>${c.a.date}</b> vs <b>${c.b.date}</b>.<br><br>
-        This creates pressure on timeline reliability, documentation accuracy,
-        and the credibility of the record.
-      </div>
+  if (conflicts.length > 0) {
+    let c = conflicts[0];
+
+    text = `
+      Records reference similar subject matter but list different dates: 
+      <b>${c.a.date}</b> vs <b>${c.b.date}</b>.<br><br>
+      This creates pressure on timeline reliability, documentation accuracy, and credibility.
     `;
   }
 
-  document.getElementById("analysis").innerHTML += out;
+  document.getElementById("analysis").innerHTML = `
+    <div class="white-output">${text}</div>
+  `;
 }
 
-/* PRESSURE SCORE */
-function renderPressure(conflicts) {
-  let score = 0;
-
-  score += conflicts.length * 25;
-  score += docs.length >= 3 ? 15 : 0;
-  score += docs.length >= 5 ? 15 : 0;
+// Pressure score
+function renderPressure() {
+  const conflicts = getConflicts();
+  let score = conflicts.length * 25;
 
   if (score > 100) score = 100;
 
@@ -250,26 +198,10 @@ function renderPressure(conflicts) {
   `;
 }
 
-/* RECOMMENDED DOCS */
-function renderRequests(conflicts) {
-  let out = `
-    <div class="white-output">
-      <b>CaseForge recommends adding:</b><br><br>
-      - Original incident report<br>
-      - CAD / dispatch logs<br>
-      - Bodycam timestamps or transcript<br>
-      - Affidavit or charging document<br>
-      - Database query records<br>
-      - Emails, texts, call logs, or witness statements<br>
-    </div>
-  `;
-
-  document.getElementById("requestBox").innerHTML = out;
-}
-
-/* TIMELINE */
+// Timeline
 function renderTimeline() {
   let sorted = [...docs].sort((a, b) => new Date(a.date) - new Date(b.date));
+
   let out = "";
 
   sorted.forEach(d => {
@@ -284,36 +216,27 @@ function renderTimeline() {
   document.getElementById("timeline").innerHTML = out;
 }
 
-/* EXPORT REPORT */
+// Export report
 function exportReport() {
-  const conflicts = getConflicts();
+  let report = "CASEFORGE REPORT\n\n";
 
-  let text = "CASEFORGE REPORT\n";
-  text += "====================\n\n";
-
-  text += "EXHIBITS:\n";
-  docs.forEach((d, i) => {
-    text += `${i + 1}. ${d.title} (${d.date})\n${d.text}\n\n`;
+  docs.forEach(d => {
+    report += `${d.date} - ${d.title}\n${d.text}\n\n`;
   });
 
-  text += "CONFLICTS:\n";
-  if (conflicts.length === 0) {
-    text += "No conflicts detected.\n\n";
-  } else {
-    conflicts.forEach((c, i) => {
-      text += `${i + 1}. ${c.a.title} vs ${c.b.title}\n`;
-      text += `Dates: ${c.a.date} vs ${c.b.date}\n`;
-      text += `Shared Terms: ${c.words.join(", ")}\n\n`;
-    });
-  }
-
-  const blob = new Blob([text], { type: "text/plain" });
+  const blob = new Blob([report], { type: "text/plain" });
   const link = document.createElement("a");
+
   link.href = URL.createObjectURL(blob);
-  link.download = "caseforge_report.txt";
+  link.download = "case_report.txt";
   link.click();
 }
 
-/* START APP */
-loadDocs();
-renderAll();
+// Clear everything
+function clearCase() {
+  if (confirm("Delete entire case?")) {
+    docs = [];
+    localStorage.removeItem("caseforge_docs");
+    renderAll();
+  }
+}
