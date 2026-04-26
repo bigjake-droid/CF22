@@ -1,11 +1,19 @@
 let docs = JSON.parse(localStorage.getItem("caseforge_docs")) || [];
 
-window.onload = function () {
-  renderAll();
-};
+window.onload = () => renderAll();
 
 function saveDocs() {
   localStorage.setItem("caseforge_docs", JSON.stringify(docs));
+}
+
+function escapeHTML(str = "") {
+  return str.replace(/[&<>"']/g, match => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#039;"
+  }[match]));
 }
 
 function addDoc() {
@@ -15,45 +23,41 @@ function addDoc() {
   const fileInput = document.getElementById("fileUpload");
 
   if (!title || !date || !text) {
-    alert("Fill out all fields.");
+    alert("Fill out title, date, and excerpt.");
     return;
   }
 
-  if (fileInput && fileInput.files.length > 0) {
+  const entry = {
+    id: Date.now(),
+    title,
+    date,
+    text,
+    fileName: "",
+    fileData: ""
+  };
+
+  if (fileInput.files.length > 0) {
     const file = fileInput.files[0];
     const reader = new FileReader();
 
-    reader.onload = function (e) {
-      docs.push({
-        title,
-        date,
-        text,
-        fileName: file.name,
-        fileData: e.target.result
-      });
-
+    reader.onload = e => {
+      entry.fileName = file.name;
+      entry.fileData = e.target.result;
+      docs.push(entry);
       finishAdd();
     };
 
     reader.readAsDataURL(file);
   } else {
-    docs.push({
-      title,
-      date,
-      text,
-      fileName: "",
-      fileData: ""
-    });
-
+    docs.push(entry);
     finishAdd();
   }
 }
 
 function finishAdd() {
-  document.getElementById("title").value = "";
-  document.getElementById("date").value = "";
-  document.getElementById("text").value = "";
-  document.getElementById("fileUpload").value = "";
+  ["title", "date", "text", "fileUpload"].forEach(id => {
+    document.getElementById(id).value = "";
+  });
 
   saveDocs();
   renderAll();
@@ -66,15 +70,14 @@ function removeDoc(index) {
 }
 
 function clearCase() {
-  if (!confirm("Clear all saved evidence?")) return;
-
+  if (!confirm("Clear all saved evidence? This cannot be undone.")) return;
   docs = [];
   localStorage.removeItem("caseforge_docs");
   renderAll();
 }
 
 function normalizeText(text) {
-  return text.toLowerCase().replace(/[^\w\s]/g, "").trim();
+  return text.toLowerCase().replace(/[^\w\s]/g, "").replace(/\s+/g, " ").trim();
 }
 
 function getConflicts() {
@@ -82,14 +85,19 @@ function getConflicts() {
 
   for (let i = 0; i < docs.length; i++) {
     for (let j = i + 1; j < docs.length; j++) {
-      const sameText = normalizeText(docs[i].text) === normalizeText(docs[j].text);
-      const differentDate = docs[i].date !== docs[j].date;
+      const a = docs[i];
+      const b = docs[j];
 
-      if (sameText && differentDate) {
-        conflicts.push({
-          a: docs[i],
-          b: docs[j]
-        });
+      const sameText = normalizeText(a.text) === normalizeText(b.text);
+      const sameTitle = normalizeText(a.title) === normalizeText(b.title);
+      const differentDate = a.date !== b.date;
+
+      const dateWords = /\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec|\d{1,2}\/\d{1,2}\/\d{2,4})\b/i;
+
+      const bothMentionDates = dateWords.test(a.text) && dateWords.test(b.text);
+
+      if ((sameText || sameTitle || bothMentionDates) && differentDate) {
+        conflicts.push({ a, b });
       }
     }
   }
@@ -108,121 +116,115 @@ function renderAll() {
 }
 
 function renderDocs() {
-  let out = "";
+  const box = document.getElementById("docsBox");
 
   if (docs.length === 0) {
-    out = `<div class="card">No evidence added yet.</div>`;
+    box.innerHTML = `<div class="card empty">No evidence added yet.</div>`;
+    return;
   }
 
-  docs.forEach((d, i) => {
-    out += `
-      <div class="card">
-        <b>${d.title}</b><br>
-        <small>${d.date}</small><br><br>
-
-        ${d.text}
-
-        ${d.fileData 
-          ? `<br><br><a href="${d.fileData}" target="_blank" download="${d.fileName}">📎 Open ${d.fileName}</a>` 
-          : ""}
-
-        <br><br>
+  box.innerHTML = docs.map((d, i) => `
+    <div class="card evidence-card">
+      <div class="card-top">
+        <div>
+          <b>${escapeHTML(d.title)}</b><br>
+          <small>${escapeHTML(d.date)}</small>
+        </div>
         <button class="remove-btn" onclick="removeDoc(${i})">Remove</button>
       </div>
-    `;
-  });
 
-  document.getElementById("docsBox").innerHTML = out;
+      <p>${escapeHTML(d.text)}</p>
+
+      ${d.fileData ? `
+        <a class="file-link" href="${d.fileData}" target="_blank" download="${escapeHTML(d.fileName)}">
+          📎 Open ${escapeHTML(d.fileName)}
+        </a>
+      ` : ""}
+    </div>
+  `).join("");
 }
 
 function renderConflicts() {
   const conflicts = getConflicts();
-  let out = "";
+  const box = document.getElementById("conflicts");
 
   if (conflicts.length === 0) {
-    out = `<div class="card">No conflicts detected yet.</div>`;
-  } else {
-    conflicts.forEach(c => {
-      out += `
-        <div class="white-output score-medium">
-          <b>Conflict Detected</b><br><br>
-          ${c.a.title} vs ${c.b.title}<br>
-          Dates: <b>${c.a.date}</b> vs <b>${c.b.date}</b>
-        </div>
-      `;
-    });
+    box.innerHTML = `<div class="white-output">No conflicts detected yet.</div>`;
+    return;
   }
 
-  document.getElementById("conflicts").innerHTML = out;
+  box.innerHTML = conflicts.map(c => `
+    <div class="white-output score-medium">
+      <b>Conflict Detected</b><br><br>
+      ${escapeHTML(c.a.title)} vs ${escapeHTML(c.b.title)}<br>
+      Dates: <b>${escapeHTML(c.a.date)}</b> vs <b>${escapeHTML(c.b.date)}</b>
+    </div>
+  `).join("");
 }
 
 function renderAnalysis() {
   const conflicts = getConflicts();
+  const box = document.getElementById("analysis");
 
-  let out = `
-    <div class="white-output">
-      No major contradictions identified yet.
-    </div>
-  `;
-
-  if (conflicts.length > 0) {
-    const c = conflicts[0];
-
-    out = `
+  if (conflicts.length === 0) {
+    box.innerHTML = `
       <div class="white-output">
-        <b>Investigator View</b><br><br>
-        Records reference similar subject matter but list different dates:
-        <b>${c.a.date}</b> vs <b>${c.b.date}</b>.<br><br>
-        This creates pressure on timeline reliability, documentation accuracy, and credibility.
+        No major contradictions identified yet. Add multiple records and CaseForge will start hunting for timeline cracks.
       </div>
     `;
+    return;
   }
 
-  document.getElementById("analysis").innerHTML = out;
+  box.innerHTML = `
+    <div class="white-output">
+      <b>Investigator View</b><br><br>
+      CaseForge detected <b>${conflicts.length}</b> timeline conflict(s).<br><br>
+      The strongest issue appears to be a mismatch between:
+      <b>${escapeHTML(conflicts[0].a.date)}</b> and <b>${escapeHTML(conflicts[0].b.date)}</b>.<br><br>
+      That pressures credibility, sequence accuracy, and whether later records were shaped after the fact.
+    </div>
+  `;
 }
 
 function renderLeverage() {
   const conflicts = getConflicts();
+  const box = document.getElementById("leverageBox");
 
-  let out = `
-    <div class="white-output">
-      No leverage point generated yet. Add matching records with conflicting dates, claims, or source language.
-    </div>
-  `;
-
-  if (conflicts.length > 0) {
-    const c = conflicts[0];
-
-    out = `
-      <div class="white-output score-high">
-        <b>Primary Leverage Point</b><br><br>
-        Two records appear to reference the same underlying event but report different dates:
-        <b>${c.a.date}</b> and <b>${c.b.date}</b>.<br><br>
-
-        <b>Usable Argument:</b><br>
-        This inconsistency raises questions about the reliability of the reported sequence of events,
-        the accuracy of the documentation, and whether later records were created or shaped after the fact.<br><br>
-
-        <b>Suggested Language:</b><br>
-        “The record contains inconsistent dates for what appears to be the same alleged event.
-        That inconsistency undermines confidence in the timeline and warrants clarification before any conclusion is treated as reliable.”
+  if (conflicts.length === 0) {
+    box.innerHTML = `
+      <div class="white-output">
+        No leverage generated yet. Add records with matching events, conflicting dates, source contradictions, or altered language.
       </div>
     `;
+    return;
   }
 
-  document.getElementById("leverageBox").innerHTML = out;
+  box.innerHTML = `
+    <div class="white-output score-high">
+      <b>Primary Leverage Point</b><br><br>
+      The record contains inconsistent dates for what appears to be the same or related event:
+      <b>${escapeHTML(conflicts[0].a.date)}</b> and <b>${escapeHTML(conflicts[0].b.date)}</b>.<br><br>
+
+      <b>Usable Argument:</b><br>
+      This inconsistency undermines confidence in the official timeline and requires clarification before the record can be treated as reliable.<br><br>
+
+      <b>Suggested Language:</b><br>
+      “The record contains inconsistent dates for what appears to be the same underlying event. That inconsistency undermines confidence in the timeline, creates credibility concerns, and warrants production of the original source records, metadata, and audit trail.”
+    </div>
+  `;
 }
 
 function renderPressure() {
   const conflicts = getConflicts();
+  const box = document.getElementById("pressureBox");
 
-  let score = 0;
-  score += conflicts.length * 35;
+  let score = conflicts.length * 35;
+
   if (docs.length >= 3) score += 10;
   if (docs.length >= 5) score += 15;
   if (conflicts.length >= 2) score += 20;
 
-  if (score > 100) score = 100;
+  score = Math.min(score, 100);
 
   let level = "Low";
   let className = "score-low";
@@ -235,11 +237,12 @@ function renderPressure() {
     className = "score-medium";
   }
 
-  document.getElementById("pressureBox").innerHTML = `
+  box.innerHTML = `
     <div class="white-output ${className}">
       <b>Legal Pressure Score: ${score} / 100</b><br>
       Risk Level: ${level}<br><br>
-      ${conflicts.length} conflict(s) detected.
+      Evidence Items: ${docs.length}<br>
+      Conflicts Detected: ${conflicts.length}
     </div>
   `;
 }
@@ -250,32 +253,39 @@ function renderRequests() {
       <b>Recommended Documents:</b><br><br>
       • Original incident report<br>
       • CAD / dispatch log<br>
-      • Bodycam transcript or timestamps<br>
+      • Bodycam footage and timestamps<br>
       • Affidavit or charging document<br>
       • Database query records<br>
+      • Metadata / audit logs<br>
       • Emails, texts, call logs, or witness statements
     </div>
   `;
 }
 
 function renderTimeline() {
-  const sorted = [...docs].sort((a, b) => new Date(a.date) - new Date(b.date));
-  let out = "";
+  const box = document.getElementById("timeline");
 
-  if (sorted.length === 0) {
-    out = `<div class="card">No timeline yet.</div>`;
+  if (docs.length === 0) {
+    box.innerHTML = `<div class="card empty">No timeline yet.</div>`;
+    return;
   }
 
-  sorted.forEach(d => {
-    out += `
-      <div class="timeline-card">
-        ${d.date}<br>
-        <b>${d.title}</b>
-      </div>
-    `;
+  const sorted = [...docs].sort((a, b) => {
+    const dateA = new Date(a.date);
+    const dateB = new Date(b.date);
+
+    if (isNaN(dateA)) return 1;
+    if (isNaN(dateB)) return -1;
+
+    return dateA - dateB;
   });
 
-  document.getElementById("timeline").innerHTML = out;
+  box.innerHTML = sorted.map(d => `
+    <div class="timeline-card">
+      <span>${escapeHTML(d.date)}</span><br>
+      <b>${escapeHTML(d.title)}</b>
+    </div>
+  `).join("");
 }
 
 function exportReport() {
@@ -284,7 +294,9 @@ function exportReport() {
   let report = "CASEFORGE REPORT\n";
   report += "====================\n\n";
 
-  report += "EVIDENCE:\n";
+  report += "EVIDENCE\n";
+  report += "--------------------\n";
+
   docs.forEach((d, i) => {
     report += `${i + 1}. ${d.title} (${d.date})\n`;
     report += `${d.text}\n`;
@@ -292,27 +304,34 @@ function exportReport() {
     report += "\n";
   });
 
-  report += "CONFLICTS:\n";
+  report += "\nCONFLICTS\n";
+  report += "--------------------\n";
+
   if (conflicts.length === 0) {
-    report += "No conflicts detected.\n\n";
+    report += "No conflicts detected.\n";
   } else {
     conflicts.forEach((c, i) => {
       report += `${i + 1}. ${c.a.title} vs ${c.b.title}\n`;
-      report += `${c.a.date} vs ${c.b.date}\n\n`;
+      report += `Dates: ${c.a.date} vs ${c.b.date}\n\n`;
     });
   }
 
-  report += "LEVERAGE POINTS:\n";
+  report += "\nLEVERAGE POINTS\n";
+  report += "--------------------\n";
+
   if (conflicts.length > 0) {
-    report += "The record contains inconsistent dates for what appears to be the same alleged event. ";
-    report += "That inconsistency undermines confidence in the timeline and warrants clarification before any conclusion is treated as reliable.\n";
+    report += "The record contains inconsistent dates for what appears to be the same underlying event. ";
+    report += "That inconsistency undermines confidence in the timeline and warrants production of original source records, metadata, and audit logs.\n";
   } else {
     report += "No leverage points generated yet.\n";
   }
 
   const blob = new Blob([report], { type: "text/plain" });
   const link = document.createElement("a");
+
   link.href = URL.createObjectURL(blob);
   link.download = "caseforge_report.txt";
   link.click();
+
+  URL.revokeObjectURL(link.href);
 }
