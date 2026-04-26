@@ -9,82 +9,115 @@
 
 <body>
   <main class="app">
+
+    <!-- START SCREEN -->
     <section id="startScreen" class="start-screen">
-  <img 
-    src="https://i.postimg.cc/HkF97bcq/file-0000000056b071f5ab04f4cd5b8d3ab5.png"
-    alt="CaseForge Logo"
-    class="start-logo"
-  >
+      <img 
+        src="https://i.postimg.cc/HkF97bcq/file-0000000056b071f5ab04f4cd5b8d3ab5.png"
+        alt="CaseForge Logo"
+        class="start-logo"
+      />
 
+      <div class="choice-row">
+        <button onclick="showMission('personal')">Personal</button>
+        <button onclick="showMission('business')">Business</button>
+      </div>
 
-  <div class="choice-row">
-    <button onclick="startCase('personal')">Personal Case</button>
-    <button onclick="startCase('business')">Business / Professional</button>
-  </div>
-
-  <p class="disclaimer">
-    CaseForge is an evidence organization and analysis tool. It does not provide legal advice,
-    create an attorney-client relationship, or replace review by a licensed attorney.
-  </p>
+      <p class="bottom-disclaimer">
+        CaseForge is an evidence organization tool. It does not provide legal advice, create an attorney-client relationship, or replace review by a licensed attorney.
+      </p>
     </section>
 
-   
+    <!-- MISSION SCREEN -->
+    <section id="missionScreen" class="mission-screen hidden">
+      <h1 id="missionTitle">Personal Case</h1>
 
-    <section class="input-card">
-      
+      <p id="missionText">
+        I created CaseForge because I was once staring into the abyss of the criminal justice system.
+        I had to learn procedure, discovery, timelines, contradictions, and documentation on my own —
+        and trust me, I learned it the hard way.
+        <br><br>
+        This tool exists for people buried under paperwork, pressure, confusion, and fear.
+        CaseForge helps turn scattered evidence into a clear record.
+      </p>
 
-      <input id="title" placeholder="Document title" />
-      <input id="date" placeholder="Date ex: Aug 6, 2025" />
-      <textarea id="text" placeholder="Paste excerpt, statement, report text, contradiction, or notes..."></textarea>
+      <button onclick="enterCaseApp()">Enter CaseForge</button>
 
-      <label class="file-label" for="fileUpload">Upload File</label>
-      <input type="file" id="fileUpload" />
-
-      <button class="primary-btn" onclick=
+      <p class="bottom-disclaimer">
+        CaseForge is an evidence organization tool. It does not provide legal advice, create an attorney-client relationship, or replace review by a licensed attorney.
+      </p>
     </section>
 
-    <section class="dashboard-grid">
+    <!-- CASE APP -->
+    <section id="caseApp" class="case-app hidden">
 
-      <div class="panel">
-      
-        <div id="docsBox"></div>
-      </div>
+      <section class="hero">
+        <img 
+          src="https://i.postimg.cc/HkF97bcq/file-0000000056b071f5ab04f4cd5b8d3ab5.png"
+          alt="CaseForge Logo"
+          class="logo-img"
+        />
+      </section>
 
-      <div class="panel">
-        <h2>Conflicts</h2>
-        <div id="conflicts"></div>
-      </div>
+      <section class="input-card">
+        <input id="title" placeholder="Document title" />
+        <input id="date" placeholder="Date ex: Aug 6, 2025" />
+        <textarea id="text" placeholder="Paste excerpt, statement, report text, contradiction, or notes..."></textarea>
 
-      <div class="panel">
-        <h2>Investigator View</h2>
-        <div id="analysis"></div>
-      </div>
+        <label class="file-label" for="fileUpload">Upload File</label>
+        <input type="file" id="fileUpload" />
 
-      <div class="panel">
-        <h2>Leverage Points</h2>
-        <div id="leverageBox"></div>
-      </div>
+        <button class="primary-btn" onclick="addDoc()">Add Evidence</button>
+      </section>
 
-      <div class="panel">
-        <h2>Legal Pressure Score</h2>
-        <div id="pressureBox"></div>
-      </div>
+      <section class="dashboard-grid">
 
-      <div class="panel">
-        <h2>Recommended Requests</h2>
-        <div id="requestBox"></div>
-      </div>
+        <div class="panel">
+          <h2>Evidence Added</h2>
+          <div id="docsBox"></div>
+        </div>
 
-      <div class="panel wide">
-        <h2>Timeline</h2>
-        <div id="timeline"></div>
-      </div>
+        <div class="panel">
+          <h2>Conflicts</h2>
+          <div id="conflicts"></div>
+        </div>
 
-    </section>
+        <div class="panel">
+          <h2>Investigator View</h2>
+          <div id="analysis"></div>
+        </div>
 
-    <section class="action-row">
-      <button onclick="exportReport()">Export Report</button>
-      <button class="danger-btn" onclick="clearCase()">Clear Saved Case</button>
+        <div class="panel">
+          <h2>Leverage Points</h2>
+          <div id="leverageBox"></div>
+        </div>
+
+        <div class="panel">
+          <h2>Legal Pressure Score</h2>
+          <div id="pressureBox"></div>
+        </div>
+
+        <div class="panel">
+          <h2>Recommended Requests</h2>
+          <div id="requestBox"></div>
+        </div>
+
+        <div class="panel wide">
+          <h2>Timeline</h2>
+          <div id="timeline"></div>
+        </div>
+
+      </section>
+
+      <section class="action-row">
+        <button onclick="exportReport()">Export Report</button>
+        <button class="danger-btn" onclick="clearCase()">Clear Saved Case</button>
+      </section>
+
+      <p class="app-disclaimer">
+        CaseForge is an evidence organization tool. It does not provide legal advice, create an attorney-client relationship, or replace review by a licensed attorney.
+      </p>
+
     </section>
 
   </main>
