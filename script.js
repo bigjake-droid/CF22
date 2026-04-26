@@ -72,7 +72,7 @@ function addDoc() {
   }
 
   const entry = {
-    id: Date.now(),
+    id: Date.now() + Math.random(),
     title,
     date,
     text,
@@ -125,8 +125,10 @@ function normalizeText(text) {
   return text.toLowerCase().replace(/[^\w\s]/g, "").replace(/\s+/g, " ").trim();
 }
 
+/* ===== CLEAN CONFLICT DETECTION — NO DUPLICATES ===== */
 function getConflicts() {
   const conflicts = [];
+  const seen = new Set();
 
   for (let i = 0; i < docs.length; i++) {
     for (let j = i + 1; j < docs.length; j++) {
@@ -138,7 +140,12 @@ function getConflicts() {
       const differentDate = a.date !== b.date;
 
       if ((sameText || sameTitle) && differentDate) {
-        conflicts.push({ a, b });
+        const key = [a.id || i, b.id || j].sort().join("-");
+
+        if (!seen.has(key)) {
+          seen.add(key);
+          conflicts.push({ a, b });
+        }
       }
     }
   }
@@ -191,8 +198,8 @@ function renderConflicts() {
     : conflicts.map(c => `
         <div class="white-output score-medium">
           <b>Conflict Detected</b><br><br>
-          ${c.a.title} vs ${c.b.title}<br>
-          Dates: <b>${c.a.date}</b> vs <b>${c.b.date}</b>
+          ${escapeHTML(c.a.title)} vs ${escapeHTML(c.b.title)}<br>
+          Dates: <b>${escapeHTML(c.a.date)}</b> vs <b>${escapeHTML(c.b.date)}</b>
         </div>
       `).join("");
 }
@@ -207,7 +214,8 @@ function renderAnalysis() {
     ? `<div class="white-output">No contradictions yet.</div>`
     : `<div class="white-output">
         <b>Investigator View</b><br><br>
-        Timeline inconsistency detected: ${conflicts[0].a.date} vs ${conflicts[0].b.date}.
+        CaseForge detected <b>${conflicts.length}</b> timeline conflict(s).<br><br>
+        Strongest issue: <b>${escapeHTML(conflicts[0].a.date)}</b> vs <b>${escapeHTML(conflicts[0].b.date)}</b>.
       </div>`;
 }
 
@@ -220,7 +228,8 @@ function renderLeverage() {
   box.innerHTML = conflicts.length === 0
     ? `<div class="white-output">No leverage yet.</div>`
     : `<div class="white-output score-high">
-        Conflicting dates undermine timeline reliability and credibility.
+        <b>Primary Leverage Point</b><br><br>
+        Conflicting dates undermine timeline reliability, credibility, and documentation accuracy.
       </div>`;
 }
 
@@ -230,11 +239,16 @@ function renderPressure() {
 
   const conflicts = getConflicts();
 
-  let score = Math.min(conflicts.length * 40, 100);
+  let score = conflicts.length * 40;
+  if (docs.length >= 3) score += 10;
+  if (docs.length >= 5) score += 15;
+  score = Math.min(score, 100);
 
   box.innerHTML = `
     <div class="white-output">
-      Pressure Score: ${score}/100
+      <b>Pressure Score: ${score}/100</b><br><br>
+      Evidence Items: ${docs.length}<br>
+      Conflicts Detected: ${conflicts.length}
     </div>
   `;
 }
@@ -245,11 +259,13 @@ function renderRequests() {
 
   box.innerHTML = `
     <div class="white-output">
-      • Incident report<br>
-      • CAD logs<br>
-      • Bodycam<br>
-      • Affidavit<br>
-      • Metadata logs
+      • Original incident report<br>
+      • CAD / dispatch logs<br>
+      • Bodycam footage and timestamps<br>
+      • Affidavit or charging document<br>
+      • Database query records<br>
+      • Metadata / audit logs<br>
+      • Emails, texts, call logs, or witness statements
     </div>
   `;
 }
@@ -267,37 +283,58 @@ function renderTimeline() {
 
   box.innerHTML = sorted.map(d => `
     <div class="timeline-card">
-      ${d.date}<br><b>${d.title}</b>
+      ${escapeHTML(d.date)}<br><b>${escapeHTML(d.title)}</b>
     </div>
   `).join("");
 }
 
-function exportReport() {
-  alert("Export coming next step.");
-}function exportReport() {
+/* ===== LOGO LOADER FOR PDF ===== */
+function loadLogo() {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.src = "https://i.postimg.cc/HkF97bcq/file-0000000056b071f5ab04f4cd5b8d3ab5.png";
+
+    img.onload = () => resolve(img);
+    img.onerror = () => resolve(null);
+  });
+}
+
+/* ===== REAL PDF EXPORT WITH LOGO ===== */
+async function exportReport() {
+  if (!window.jspdf) {
+    alert("PDF library did not load. Check your index.html script links.");
+    return;
+  }
+
   const { jsPDF } = window.jspdf;
   const pdf = new jsPDF();
 
+  const logo = await loadLogo();
   const conflicts = getConflicts();
   const caseType = localStorage.getItem("caseforge_case_type") || "Unspecified";
 
-  let y = 20;
+  let y = 18;
   const left = 15;
   const pageWidth = 180;
   const lineHeight = 7;
 
+  function checkPage() {
+    if (y > 275) {
+      pdf.addPage();
+      y = 20;
+    }
+  }
+
   function addText(text, size = 11, bold = false) {
     pdf.setFont("helvetica", bold ? "bold" : "normal");
     pdf.setFontSize(size);
+    pdf.setTextColor(0);
 
-    const lines = pdf.splitTextToSize(text, pageWidth);
+    const lines = pdf.splitTextToSize(String(text), pageWidth);
 
     lines.forEach(line => {
-      if (y > 275) {
-        pdf.addPage();
-        y = 20;
-      }
-
+      checkPage();
       pdf.text(line, left, y);
       y += lineHeight;
     });
@@ -305,17 +342,29 @@ function exportReport() {
 
   function divider() {
     y += 3;
+    checkPage();
+    pdf.setDrawColor(160);
     pdf.line(left, y, 195, y);
     y += 8;
   }
 
+  if (logo) {
+    try {
+      pdf.addImage(logo, "PNG", 55, y, 100, 45);
+      y += 52;
+    } catch (e) {
+      y += 5;
+    }
+  }
+
   pdf.setFont("helvetica", "bold");
   pdf.setFontSize(22);
+  pdf.setTextColor(0);
   pdf.text("CaseForge Report", left, y);
   y += 10;
 
-  pdf.setFontSize(10);
   pdf.setFont("helvetica", "normal");
+  pdf.setFontSize(10);
   pdf.text(`Case Type: ${caseType}`, left, y);
   y += 6;
   pdf.text(`Generated: ${new Date().toLocaleString()}`, left, y);
@@ -392,6 +441,7 @@ function exportReport() {
 
   divider();
 
+  pdf.setFont("helvetica", "normal");
   pdf.setFontSize(8);
   pdf.setTextColor(120);
   pdf.text(
