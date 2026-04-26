@@ -150,15 +150,24 @@ function renderAll() {
 /* SHOW EXHIBITS */
 function renderDocs() {
   let out = "";
+docs.forEach((d, i) => {
+  out += `
+    <div class="card">
+      <b>${d.title}</b><br>
+      <small>${d.date}</small><br><br>
 
-  docs.forEach((d, i) => {
-    out += `
-      <div class="card">
-        <b>${d.title}</b><br>
-        <small>${d.date}</small><br><br>
-        ${d.fileName ? `<br><a href="${d.fileURL}" target="_blank">📎 Open ${d.fileName}</a>` : ""}
-        <button class="remove-btn" onclick="removeDoc(${i})">Remove</button>
-      </div>
+      ${d.text}
+
+      ${d.fileData 
+        ? `<br><a href="${d.fileData}" target="_blank" download="${d.fileName}">📎 Open ${d.fileName}</a>` 
+        : ""}
+
+      <br><br>
+      <button class="remove-btn" onclick="removeDoc(${i})">Remove</button>
+    </div>
+  `;
+});
+
     `;
   });
 
