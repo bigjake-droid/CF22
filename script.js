@@ -105,7 +105,7 @@ function renderDocs() {
       <div class="card">
         <b>${d.title}</b><br>
         <small>${d.date}</small><br><br>
-        ${d.fileName ? `<br><small>📎 ${d.fileName}</small>` : ""}
+        ${d.fileName ? `<br><a href="${d.fileURL}" target="_blank">📎 Open ${d.fileName}</a>` : ""}
         <button class="remove-btn" onclick="removeDoc(${i})">Remove</button>
       </div>
     `;
