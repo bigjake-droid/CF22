@@ -12,7 +12,15 @@ body {
   margin: auto;
   padding: 20px;
 }
-.hero {
+.hero {.hero::after {
+  content: "";
+  display: block;
+  width: 60px;
+  height: 2px;
+  margin: 14px auto 0;
+  background: linear-gradient(to right, transparent, #d4a84f, transparent);
+  opacity: 0.6;
+}
   text-align: center;
   padding: 20px 12px 10px;
 }
