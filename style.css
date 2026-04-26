@@ -259,3 +259,54 @@ button:hover {
     grid-column: span 1;
   }
 }
+.hidden {
+  display: none !important;
+}
+
+.start-screen,
+.mission-screen {
+  min-height: 100vh;
+  padding: 28px 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  position: relative;
+}
+
+.start-logo {
+  width: 92%;
+  max-width: 420px;
+  margin-bottom: 28px;
+  filter: drop-shadow(0 8px 22px rgba(255, 170, 0, 0.28));
+}
+
+.choice-row {
+  width: 100%;
+  max-width: 340px;
+  display: grid;
+  gap: 14px;
+}
+
+.mission-screen h1 {
+  font-size: 32px;
+  margin-bottom: 18px;
+}
+
+.mission-screen p {
+  max-width: 460px;
+  font-size: 16px;
+  line-height: 1.6;
+  color: #d8dbe6;
+}
+
+.bottom-disclaimer {
+  position: absolute;
+  bottom: 12px;
+  left: 18px;
+  right: 18px;
+  font-size: 9px !important;
+  line-height: 1.3;
+  color: #6f778a !important;
+}
