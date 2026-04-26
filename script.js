@@ -1,20 +1,13 @@
-let docs = [];
+let docs = JSON.parse(localStorage.getItem("caseforge_docs")) || [];
 
-// Load saved case on startup
 window.onload = function () {
-  const saved = localStorage.getItem("caseforge_docs");
-  if (saved) {
-    docs = JSON.parse(saved);
-    renderAll();
-  }
+  renderAll();
 };
 
-// Save to browser
 function saveDocs() {
   localStorage.setItem("caseforge_docs", JSON.stringify(docs));
 }
 
-// Add Evidence
 function addDoc() {
   const title = document.getElementById("title").value.trim();
   const date = document.getElementById("date").value.trim();
@@ -26,7 +19,7 @@ function addDoc() {
     return;
   }
 
-  if (fileInput.files.length > 0) {
+  if (fileInput && fileInput.files.length > 0) {
     const file = fileInput.files[0];
     const reader = new FileReader();
 
@@ -56,7 +49,6 @@ function addDoc() {
   }
 }
 
-// Finish add
 function finishAdd() {
   document.getElementById("title").value = "";
   document.getElementById("date").value = "";
@@ -67,92 +59,33 @@ function finishAdd() {
   renderAll();
 }
 
-// Remove doc
-function removeDoc(i) {
-  docs.splice(i, 1);
+function removeDoc(index) {
+  docs.splice(index, 1);
   saveDocs();
   renderAll();
 }
 
-// Render everything
-function renderAll() {
-  renderDocs();
-  renderConflicts();
-  renderAnalysis();
-  function renderLeverage() {
-  const conflicts = getConflicts();
-  let out = "";
+function clearCase() {
+  if (!confirm("Clear all saved evidence?")) return;
 
-  if (conflicts.length === 0) {
-    out = `
-      <div class="white-output">
-        No leverage point generated yet. Add matching records with conflicting dates, claims, or source language.
-      </div>
-    `;
-  } else {
-    const c = conflicts[0];
-
-    out = `
-      <div class="white-output">
-        <b>Primary Leverage Point:</b><br><br>
-
-        Two records appear to reference the same underlying event, but they report different dates:
-        <b>${c.a.date}</b> and <b>${c.b.date}</b>.<br><br>
-
-        <b>Useable Argument:</b><br>
-        This discrepancy raises questions about the reliability of the reported sequence of events,
-        the accuracy of the documentation, and whether later records were created or shaped after the fact.<br><br>
-
-        <b>Suggested Language:</b><br>
-        “The record contains inconsistent dates for what appears to be the same alleged event. That inconsistency
-        undermines confidence in the timeline and warrants clarification before any conclusion is treated as reliable.”
-      </div>
-    `;
-  }
-
-  document.getElementById("leverageBox").innerHTML = out;
-  }
-  renderLeverage();
-  renderPressure();
-  renderTimeline();
-}
+  docs = [];
+  localStorage.removeItem("caseforge_docs");
+  renderAll();
 }
 
-// Render documents
-function renderDocs() {
-  let out = "";
-
-  docs.forEach((d, i) => {
-    out += `
-      <div class="card">
-        <b>${d.title}</b><br>
-        <small>${d.date}</small><br><br>
-
-        ${d.text}
-
-        ${d.fileData 
-          ? `<br><a href="${d.fileData}" target="_blank" download="${d.fileName}">📎 Open ${d.fileName}</a>` 
-          : ""}
-
-        <br><br>
-        <button class="remove-btn" onclick="removeDoc(${i})">Remove</button>
-      </div>
-    `;
-  });
-document.getElementById("docsBox").innerHTML = out;
-  
+function normalizeText(text) {
+  return text.toLowerCase().replace(/[^\w\s]/g, "").trim();
 }
 
-// Detect conflicts
 function getConflicts() {
-  let conflicts = [];
+  const conflicts = [];
 
   for (let i = 0; i < docs.length; i++) {
     for (let j = i + 1; j < docs.length; j++) {
-      if (
-        docs[i].text === docs[j].text &&
-        docs[i].date !== docs[j].date
-      ) {
+      const sameText = normalizeText(docs[i].text) === normalizeText(docs[j].text);
+      const differentDate = docs[i].date !== docs[j].date;
+
+      if (sameText && differentDate) {
         conflicts.push({
           a: docs[i],
           b: docs[j]
@@ -164,18 +97,56 @@ function getConflicts() {
   return conflicts;
 }
 
-// Render conflicts
+function renderAll() {
+  renderDocs();
+  renderConflicts();
+  renderAnalysis();
+  renderLeverage();
+  renderPressure();
+  renderRequests();
+  renderTimeline();
+}
+
+function renderDocs() {
+  let out = "";
+
+  if (docs.length === 0) {
+    out = `<div class="card">No evidence added yet.</div>`;
+  }
+
+  docs.forEach((d, i) => {
+    out += `
+      <div class="card">
+        <b>${d.title}</b><br>
+        <small>${d.date}</small><br><br>
+
+        ${d.text}
+
+        ${d.fileData 
+          ? `<br><br><a href="${d.fileData}" target="_blank" download="${d.fileName}">📎 Open ${d.fileName}</a>` 
+          : ""}
+
+        <br><br>
+        <button class="remove-btn" onclick="removeDoc(${i})">Remove</button>
+      </div>
+    `;
+  });
+
+  document.getElementById("docsBox").innerHTML = out;
+}
+
 function renderConflicts() {
   const conflicts = getConflicts();
   let out = "";
 
   if (conflicts.length === 0) {
-    out = "<p>No conflicts detected yet.</p>";
+    out = `<div class="card">No conflicts detected yet.</div>`;
   } else {
     conflicts.forEach(c => {
       out += `
-        <div class="white-output">
-          Conflict: "${c.a.title}" vs "${c.b.title}"<br>
+        <div class="white-output score-medium">
+          <b>Conflict Detected</b><br><br>
+          ${c.a.title} vs ${c.b.title}<br>
           Dates: <b>${c.a.date}</b> vs <b>${c.b.date}</b>
         </div>
       `;
@@ -185,31 +156,71 @@ function renderConflicts() {
   document.getElementById("conflicts").innerHTML = out;
 }
 
-// Investigator view
 function renderAnalysis() {
   const conflicts = getConflicts();
 
-  let text = "No major contradictions identified yet.";
+  let out = `
+    <div class="white-output">
+      No major contradictions identified yet.
+    </div>
+  `;
 
   if (conflicts.length > 0) {
-    let c = conflicts[0];
+    const c = conflicts[0];
 
-    text = `
-      Records reference similar subject matter but list different dates: 
-      <b>${c.a.date}</b> vs <b>${c.b.date}</b>.<br><br>
-      This creates pressure on timeline reliability, documentation accuracy, and credibility.
+    out = `
+      <div class="white-output">
+        <b>Investigator View</b><br><br>
+        Records reference similar subject matter but list different dates:
+        <b>${c.a.date}</b> vs <b>${c.b.date}</b>.<br><br>
+        This creates pressure on timeline reliability, documentation accuracy, and credibility.
+      </div>
     `;
   }
 
-  document.getElementById("analysis").innerHTML = `
-    <div class="white-output">${text}</div>
-  `;
+  document.getElementById("analysis").innerHTML = out;
 }
 
-// Pressure score
+function renderLeverage() {
+  const conflicts = getConflicts();
+
+  let out = `
+    <div class="white-output">
+      No leverage point generated yet. Add matching records with conflicting dates, claims, or source language.
+    </div>
+  `;
+
+  if (conflicts.length > 0) {
+    const c = conflicts[0];
+
+    out = `
+      <div class="white-output score-high">
+        <b>Primary Leverage Point</b><br><br>
+        Two records appear to reference the same underlying event but report different dates:
+        <b>${c.a.date}</b> and <b>${c.b.date}</b>.<br><br>
+
+        <b>Usable Argument:</b><br>
+        This inconsistency raises questions about the reliability of the reported sequence of events,
+        the accuracy of the documentation, and whether later records were created or shaped after the fact.<br><br>
+
+        <b>Suggested Language:</b><br>
+        “The record contains inconsistent dates for what appears to be the same alleged event.
+        That inconsistency undermines confidence in the timeline and warrants clarification before any conclusion is treated as reliable.”
+      </div>
+    `;
+  }
+
+  document.getElementById("leverageBox").innerHTML = out;
+}
+
 function renderPressure() {
   const conflicts = getConflicts();
-  let score = conflicts.length * 25;
+
+  let score = 0;
+  score += conflicts.length * 35;
+  if (docs.length >= 3) score += 10;
+  if (docs.length >= 5) score += 15;
+  if (conflicts.length >= 2) score += 20;
 
   if (score > 100) score = 100;
 
@@ -228,16 +239,32 @@ function renderPressure() {
     <div class="white-output ${className}">
       <b>Legal Pressure Score: ${score} / 100</b><br>
       Risk Level: ${level}<br><br>
-      ${conflicts.length} timeline conflict(s) detected.
+      ${conflicts.length} conflict(s) detected.
     </div>
   `;
 }
 
-// Timeline
-function renderTimeline() {
-  let sorted = [...docs].sort((a, b) => new Date(a.date) - new Date(b.date));
+function renderRequests() {
+  document.getElementById("requestBox").innerHTML = `
+    <div class="white-output">
+      <b>Recommended Documents:</b><br><br>
+      • Original incident report<br>
+      • CAD / dispatch log<br>
+      • Bodycam transcript or timestamps<br>
+      • Affidavit or charging document<br>
+      • Database query records<br>
+      • Emails, texts, call logs, or witness statements
+    </div>
+  `;
+}
 
+function renderTimeline() {
+  const sorted = [...docs].sort((a, b) => new Date(a.date) - new Date(b.date));
   let out = "";
+
+  if (sorted.length === 0) {
+    out = `<div class="card">No timeline yet.</div>`;
+  }
 
   sorted.forEach(d => {
     out += `
@@ -251,27 +278,41 @@ function renderTimeline() {
   document.getElementById("timeline").innerHTML = out;
 }
 
-// Export report
 function exportReport() {
-  let report = "CASEFORGE REPORT\n\n";
+  const conflicts = getConflicts();
 
-  docs.forEach(d => {
-    report += `${d.date} - ${d.title}\n${d.text}\n\n`;
+  let report = "CASEFORGE REPORT\n";
+  report += "====================\n\n";
+
+  report += "EVIDENCE:\n";
+  docs.forEach((d, i) => {
+    report += `${i + 1}. ${d.title} (${d.date})\n`;
+    report += `${d.text}\n`;
+    if (d.fileName) report += `Attachment: ${d.fileName}\n`;
+    report += "\n";
   });
+
+  report += "CONFLICTS:\n";
+  if (conflicts.length === 0) {
+    report += "No conflicts detected.\n\n";
+  } else {
+    conflicts.forEach((c, i) => {
+      report += `${i + 1}. ${c.a.title} vs ${c.b.title}\n`;
+      report += `${c.a.date} vs ${c.b.date}\n\n`;
+    });
+  }
+
+  report += "LEVERAGE POINTS:\n";
+  if (conflicts.length > 0) {
+    report += "The record contains inconsistent dates for what appears to be the same alleged event. ";
+    report += "That inconsistency undermines confidence in the timeline and warrants clarification before any conclusion is treated as reliable.\n";
+  } else {
+    report += "No leverage points generated yet.\n";
+  }
 
   const blob = new Blob([report], { type: "text/plain" });
   const link = document.createElement("a");
-
   link.href = URL.createObjectURL(blob);
-  link.download = "case_report.txt";
+  link.download = "caseforge_report.txt";
   link.click();
-}
-
-// Clear everything
-function clearCase() {
-  if (confirm("Delete entire case?")) {
-    docs = [];
-    localStorage.removeItem("caseforge_docs");
-    renderAll();
-  }
 }
