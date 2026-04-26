@@ -104,8 +104,8 @@ function renderDocs() {
       </div>
     `;
   });
-
-  document.getElementById("analysis").innerHTML = out;
+document.getElementById("docsBox").innerHTML = out;
+  
 }
 
 // Detect conflicts
