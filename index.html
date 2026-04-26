@@ -22,7 +22,17 @@
 <input id="date" placeholder="Date (ex: Aug 6, 2025)">
 <textarea id="text" placeholder="Paste excerpt..."></textarea>
   <input type="file" id="fileUpload">
-<button onclick="addDoc()">Add Evidence</button>
+<button onclick="addDoc()" const fileInput = document.getElementById("fileUpload");
+let fileName = "";
+let fileURL = "";
+
+if (fileInput && fileInput.files.length > 0) {
+  const file = fileInput.files[0];
+  fileName = file.name;
+  fileURL = URL.createObjectURL(file);
+}
+
+docs.push({ title, date, text, fileName, fileURL });
 
 <!-- OUTPUT SECTIONS -->
 <h2>Conflicts</h2>
