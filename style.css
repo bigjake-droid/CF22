@@ -12,28 +12,41 @@ body {
   margin: auto;
   padding: 20px;
 }
-
 .hero {
   text-align: center;
-  margin-bottom: 25px;
+  padding: 20px 12px 10px;
 }
 
 .logo-img {
-  width: 100%;
-  max-width: 320px;
-  border-radius: 12px;
-  box-shadow: 0 0 40px rgba(255, 170, 0, 0.25);
+  width: 70%;
+  max-width: 240px;
+  height: auto;
+  display: block;
+  margin: 0 auto 14px;
+
+  /* subtle glow instead of nuclear blast */
+  filter: drop-shadow(0 4px 12px rgba(255, 170, 0, 0.25));
 }
 
 .tagline-block {
-  margin-top: 15px;
+  text-align: center;
+  margin-bottom: 24px;
 }
 
 .weapon-line {
-  font-size: 13px;
+  font-size: 12px;
   letter-spacing: 2px;
+  text-transform: uppercase;
   color: #d4a84f;
-  margin: 0;
+  font-weight: 600;
+  opacity: 0.85;
+}
+
+.tagline-block h1 {
+  font-size: 26px;
+  font-weight: 900;
+  margin: 6px 0 0;
+  letter-spacing: 0.5px;
 }
 
 .tagline-block h1 {
