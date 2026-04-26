@@ -12,28 +12,13 @@ body {
 }
 
 /* HEADER */
-.header {
-  text-align: center;
-  margin-bottom: 35px;
-}
-
 .logo-img {
-  width: 230px;
-  max-width: 90%;
-  margin-bottom: 15px;
-  filter: drop-shadow(0 0 18px rgba(212, 164, 75, 0.45));
+  width: 320px;
+  max-width: 95%;
+  display: block;
+  margin: 20px auto 35px;
+  filter: drop-shadow(0 0 14px rgba(212, 175, 55, 0.35));
 }
-
-.tagline {
-    text-shadow: 0 0 10px rgba(212,162,76,0.6);
-}
-    font-size: 26px;
-    font-weight: 900;
-    letter-spacing: 4px;
-    text-transform: uppercase;
-    color: #f5c16c;
-    text-align: center;
-    margin: 20px 0 30px;
 }
 
 /* INPUTS */
