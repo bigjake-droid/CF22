@@ -4,7 +4,9 @@ const ASSETS_TO_CACHE = [
   '/CF22/index.html',
   '/CF22/style.css',
   '/CF22/script.js',
-  '/CF22/manifest.json'
+  '/CF22/manifest.json',
+  '/CF22/icon-192.png',
+  '/CF22/icon-512.png'
 ];
 
 // Install event: Caches the assets
