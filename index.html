@@ -3,6 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#ff9800">
   <title>CaseForge</title>
   <link rel="stylesheet" href="style.css" />
 </head>
@@ -10,7 +13,6 @@
 <body>
   <main class="app">
 
-    <!-- START SCREEN -->
     <section id="startScreen" class="start-screen">
       <img
         src="https://i.postimg.cc/HkF97bcq/file-0000000056b071f5ab04f4cd5b8d3ab5.png"
@@ -28,7 +30,6 @@
       </p>
     </section>
 
-    <!-- MISSION SCREEN -->
     <section id="missionScreen" class="mission-screen hidden">
       <h1 id="missionTitle">Personal Case</h1>
 
@@ -48,7 +49,6 @@
       </p>
     </section>
 
-    <!-- CASE APP -->
     <section id="caseApp" class="case-app hidden">
 
       <section class="hero">
@@ -122,5 +122,19 @@
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="script.js"></script>
-</body>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js')
+          .then(registration => {
+            console.log('CaseForge Offline Mode Engaged (Scope:', registration.scope, ')');
+          })
+          .catch(error => {
+            console.error('Offline Mode Failed:', error);
+          });
+      });
+    }
+  </script>
+  </body>
 </html>
