@@ -13,7 +13,48 @@ function saveDocs() {
 }
 
 /* ADD DOCUMENT */
-function addDoc() {
+function addDoc() {function addDoc() {
+  const title = document.getElementById("title").value.trim();
+  const date = document.getElementById("date").value.trim();
+  const text = document.getElementById("text").value.trim();
+  const fileInput = document.getElementById("fileUpload");
+
+  if (!title || !date || !text) {
+    alert("Fill out all fields.");
+    return;
+  }
+
+  if (fileInput && fileInput.files.length > 0) {
+    const file = fileInput.files[0];
+    const reader = new FileReader();
+
+    reader.onload = function(e) {
+      docs.push({
+        title,
+        date,
+        text,
+        fileName: file.name,
+        fileType: file.type,
+        fileData: e.target.result
+      });
+
+      finishAddDoc();
+    };
+
+    reader.readAsDataURL(file);
+  } else {
+    docs.push({
+      title,
+      date,
+      text,
+      fileName: "",
+      fileType: "",
+      fileData: ""
+    });
+
+    finishAddDoc();
+  }
+}
   const title = document.getElementById("title").value.trim();
   const date = document.getElementById("date").value.trim();
   const text = document.getElementById("text").value.trim();
