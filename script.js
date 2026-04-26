@@ -274,4 +274,132 @@ function renderTimeline() {
 
 function exportReport() {
   alert("Export coming next step.");
+}function exportReport() {
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF();
+
+  const conflicts = getConflicts();
+  const caseType = localStorage.getItem("caseforge_case_type") || "Unspecified";
+
+  let y = 20;
+  const left = 15;
+  const pageWidth = 180;
+  const lineHeight = 7;
+
+  function addText(text, size = 11, bold = false) {
+    pdf.setFont("helvetica", bold ? "bold" : "normal");
+    pdf.setFontSize(size);
+
+    const lines = pdf.splitTextToSize(text, pageWidth);
+
+    lines.forEach(line => {
+      if (y > 275) {
+        pdf.addPage();
+        y = 20;
+      }
+
+      pdf.text(line, left, y);
+      y += lineHeight;
+    });
+  }
+
+  function divider() {
+    y += 3;
+    pdf.line(left, y, 195, y);
+    y += 8;
+  }
+
+  pdf.setFont("helvetica", "bold");
+  pdf.setFontSize(22);
+  pdf.text("CaseForge Report", left, y);
+  y += 10;
+
+  pdf.setFontSize(10);
+  pdf.setFont("helvetica", "normal");
+  pdf.text(`Case Type: ${caseType}`, left, y);
+  y += 6;
+  pdf.text(`Generated: ${new Date().toLocaleString()}`, left, y);
+  y += 8;
+
+  divider();
+
+  addText("Evidence Summary", 16, true);
+
+  if (docs.length === 0) {
+    addText("No evidence added.");
+  } else {
+    docs.forEach((d, i) => {
+      y += 3;
+      addText(`${i + 1}. ${d.title}`, 12, true);
+      addText(`Date: ${d.date}`, 10);
+      addText(d.text, 10);
+
+      if (d.fileName) {
+        addText(`Attachment: ${d.fileName}`, 10);
+      }
+    });
+  }
+
+  divider();
+
+  addText("Detected Conflicts", 16, true);
+
+  if (conflicts.length === 0) {
+    addText("No conflicts detected.");
+  } else {
+    conflicts.forEach((c, i) => {
+      y += 3;
+      addText(`${i + 1}. ${c.a.title} vs ${c.b.title}`, 12, true);
+      addText(`Date Conflict: ${c.a.date} vs ${c.b.date}`, 10);
+      addText(
+        "This inconsistency may undermine confidence in the timeline and should be clarified with original records, metadata, or source documentation.",
+        10
+      );
+    });
+  }
+
+  divider();
+
+  addText("Leverage Analysis", 16, true);
+
+  if (conflicts.length > 0) {
+    addText(
+      "The record contains inconsistent dates or matching records with conflicting timeline information. This creates pressure on reliability, credibility, and documentation accuracy.",
+      10
+    );
+
+    addText(
+      "Suggested Language: The record contains inconsistent dates for what appears to be the same underlying event. That inconsistency undermines confidence in the timeline and warrants production of original source records, metadata, and audit logs.",
+      10
+    );
+  } else {
+    addText(
+      "No leverage point generated yet. Add matching records with conflicting dates, source contradictions, altered language, or disputed timeline claims.",
+      10
+    );
+  }
+
+  divider();
+
+  addText("Recommended Requests", 16, true);
+  addText("• Original incident report");
+  addText("• CAD / dispatch logs");
+  addText("• Bodycam footage and timestamps");
+  addText("• Affidavit or charging document");
+  addText("• Database query records");
+  addText("• Metadata / audit logs");
+  addText("• Emails, texts, call logs, or witness statements");
+
+  divider();
+
+  pdf.setFontSize(8);
+  pdf.setTextColor(120);
+  pdf.text(
+    "Disclaimer: CaseForge is an evidence organization tool. It does not provide legal advice, create an attorney-client relationship, or replace review by a licensed attorney.",
+    left,
+    287,
+    { maxWidth: 180 }
+  );
+
+  pdf.save("caseforge_report.pdf");
 }
