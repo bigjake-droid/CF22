@@ -13,7 +13,17 @@ function saveDocs() {
 }
 
 /* ADD DOCUMENT */
-function addDoc() {function addDoc() {
+function addDoc() {function addDoc() {function finishAddDoc() {
+  document.getElementById("title").value = "";
+  document.getElementById("date").value = "";
+  document.getElementById("text").value = "";
+
+  const fileInput = document.getElementById("fileUpload");
+  if (fileInput) fileInput.value = "";
+
+  saveDocs();
+  renderAll();
+}
   const title = document.getElementById("title").value.trim();
   const date = document.getElementById("date").value.trim();
   const text = document.getElementById("text").value.trim();
