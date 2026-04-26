@@ -1,61 +1,87 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>CaseForge</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css" />
 </head>
 
 <body>
-
   <main class="app">
 
     <section class="hero">
-      <img 
-        src="https://i.postimg.cc/L47LwCJj/file-00000000880471f59e40f3cec1d4bf88.png" 
-        alt="CaseForge Logo" 
+      <img
+        src="https://i.postimg.cc/L47LwCJj/file-00000000880471f59e40f3cec1d4bf88.png"
+        alt="CaseForge Logo"
         class="logo-img"
-      >
+      />
+
+      <div class="tagline-block">
+        <p class="weapon-line">Turning evidence into advantage.</p>
+        <h1>Let the record speak.</h1>
+      </div>
     </section>
 
     <section class="input-card">
-      <input id="title" placeholder="Document title">
-      <input id="date" placeholder="Date (ex: Aug 6, 2025)">
-      <textarea id="text" placeholder="Paste excerpt..."></textarea>
+      <h2>Add Evidence</h2>
 
-      <input type="file" id="fileUpload">
+      <input id="title" placeholder="Document title" />
+      <input id="date" placeholder="Date ex: Aug 6, 2025" />
+      <textarea id="text" placeholder="Paste excerpt, statement, report text, contradiction, or notes..."></textarea>
 
-      <button onclick="addDoc()">Add Evidence</button>
+      <label class="file-label" for="fileUpload">Upload File</label>
+      <input type="file" id="fileUpload" />
+
+      <button class="primary-btn" onclick="addDoc()">Add Evidence</button>
     </section>
 
-    <h2>Evidence Added</h2>
-    <div id="docsBox"></div>
+    <section class="dashboard-grid">
 
-    <h2>Conflicts</h2>
-    <div id="conflicts"></div>
+      <div class="panel">
+        <h2>Evidence Added</h2>
+        <div id="docsBox"></div>
+      </div>
 
-    <h2>Investigator View</h2>
-    <div id="analysis"></div>
+      <div class="panel">
+        <h2>Conflicts</h2>
+        <div id="conflicts"></div>
+      </div>
 
-    <h2>Leverage Points</h2>
-    <div id="leverageBox"></div>
+      <div class="panel">
+        <h2>Investigator View</h2>
+        <div id="analysis"></div>
+      </div>
 
-    <h2>Legal Pressure Score</h2>
-    <div id="pressureBox"></div>
+      <div class="panel">
+        <h2>Leverage Points</h2>
+        <div id="leverageBox"></div>
+      </div>
 
-    <h2>Documents CaseForge Recommends</h2>
-    <div id="requestBox"></div>
+      <div class="panel">
+        <h2>Legal Pressure Score</h2>
+        <div id="pressureBox"></div>
+      </div>
 
-    <h2>Timeline</h2>
-    <div id="timeline"></div>
+      <div class="panel">
+        <h2>Recommended Requests</h2>
+        <div id="requestBox"></div>
+      </div>
 
-    <button onclick="exportReport()">Export Report</button>
-    <button onclick="clearCase()">Clear Saved Case</button>
+      <div class="panel wide">
+        <h2>Timeline</h2>
+        <div id="timeline"></div>
+      </div>
+
+    </section>
+
+    <section class="action-row">
+      <button onclick="exportReport()">Export Report</button>
+      <button class="danger-btn" onclick="clearCase()">Clear Saved Case</button>
+    </section>
 
   </main>
 
   <script src="script.js"></script>
-
 </body>
 </html>
