@@ -28,7 +28,12 @@ function addDoc() {
   document.getElementById("title").value = "";
   document.getElementById("date").value = "";
   document.getElementById("text").value = "";
+const fileInput = document.getElementById("fileUpload");
+let fileName = "";
 
+if (fileInput.files.length > 0) {
+  fileName = fileInput.files[0].name;
+}
   saveDocs();
   renderAll();
 }
