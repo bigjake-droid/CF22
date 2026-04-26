@@ -1,6 +1,12 @@
 function showMission(type) {
   localStorage.setItem("caseforge_case_type", type);
+window.onload = () => {
+  document.getElementById("startScreen")?.classList.remove("hidden");
+  document.getElementById("missionScreen")?.classList.add("hidden");
+  document.getElementById("caseApp")?.classList.add("hidden");
 
+  renderAll();
+};
   document.getElementById("startScreen")?.classList.add("hidden");
   document.getElementById("missionScreen")?.classList.remove("hidden");
   document.getElementById("caseApp")?.classList.add("hidden");
